@@ -238,7 +238,7 @@ function renderList(){
   $('#count').textContent=n+(n===1?' place':' places');
   $('#sortBtn').textContent=state.sort==='best'?'Best nearby ⇅':'Nearest first ⇅';
   const o=origin();
-  $('#originTxt').textContent=o.kind==='gps'?'Walking times from where you are now':o.kind==='pin'?'Walking times from your dropped pin · ◎ to reset':gps?"You're outside Taipei · measuring from your hotel":'Measuring from your hotel · long-press the map to move';
+  $('#originTxt').textContent=o.kind==='gps'?'Walking times from where you are now':o.kind==='pin'?'Walking times from your dropped pin · ◎ to reset':gps?"You're outside Taipei · measuring from your hotel":gpsDenied?'Location is off · tap ◎ to see how to turn it on':'Measuring from your hotel · tap ◎ to use your location';
   $('#list').innerHTML=n?shown.map(card).join('')+'<div class="foot">Opening hours are a guide, not live. Tap a place, then Google Maps, to confirm before a long trip.</div>':'<div class="empty">Nothing matches these filters.<br><button id="clr">Clear all filters</button></div>';
 }
 $('#list').addEventListener('click',e=>{if(e.target.id==='clr')return clearFilters();const b=e.target.closest('.card');if(b)select(b.dataset.id)});
@@ -340,16 +340,25 @@ function setManual(ll){manual={lat:ll.lat,lng:ll.lng};LS.set('manual',manual);pi
 function refresh(scrollTop){compute();renderFilters();renderList();if(scrollTop)$('#list').scrollTop=0;if(mapReady)map.getSource('pl').setData(fc(shown));else if(map)map.once('load',()=>map.getSource('pl').setData(fc(shown)));if(state.sel)renderDetail(BY[state.sel])}
 
 /* ---------- location ---------- */
-let watching=false;
+let watchId=null,gpsDenied=false;
+const LOC_HELP='Location is blocked. On iPhone: Settings → Privacy & Security → Location Services → Safari Websites → While Using the App. Then close and reopen this app.';
+function onPos(pos){
+  const n={lat:pos.coords.latitude,lng:pos.coords.longitude},first=!gps,moved=!gps||dist(gps,n)>25;gps=n;gpsDenied=false;
+  if(meMarker&&map)meMarker.setLngLat([n.lng,n.lat]).addTo(map);
+  if(moved)refresh(false);
+  if(first&&map&&origin().kind==='gps')map.easeTo({center:[n.lng,n.lat],zoom:15,padding:pad(),duration:600});
+}
 function startGPS(byUser){
-  if(!navigator.geolocation){byUser&&toast('This device has no location service');return}
-  if(watching)return;watching=true;
-  navigator.geolocation.watchPosition(pos=>{
-    const n={lat:pos.coords.latitude,lng:pos.coords.longitude},first=!gps,moved=!gps||dist(gps,n)>25;gps=n;
-    if(meMarker&&map)meMarker.setLngLat([n.lng,n.lat]).addTo(map);
-    if(moved)refresh(false);
-    if(first&&map&&origin().kind==='gps')map.easeTo({center:[n.lng,n.lat],zoom:15,padding:pad(),duration:600});
-  },err=>{watching=false;if(byUser)toast(err.code===1?'Location is blocked. Allow it in your browser settings.':'Could not get your location yet')},{enableHighAccuracy:true,maximumAge:10000,timeout:20000});
+  const G=navigator.geolocation;
+  if(!G){byUser&&toast('This device has no location service');return}
+  if(watchId!=null){G.clearWatch(watchId);watchId=null}
+  const fail=err=>{
+    if(err.code===1){gpsDenied=true;if(watchId!=null){G.clearWatch(watchId);watchId=null}renderList();if(byUser)toast(LOC_HELP,9000)}
+    else if(byUser&&!gps)toast('Still looking for your location. Try near a window or outdoors.',5000);
+  };
+  // Quick coarse fix first (works indoors), then a precise live watch.
+  G.getCurrentPosition(onPos,fail,{enableHighAccuracy:false,maximumAge:60000,timeout:15000});
+  watchId=G.watchPosition(onPos,err=>{if(err.code===1)fail(err)},{enableHighAccuracy:true,maximumAge:5000});
 }
 $('#locBtn').addEventListener('click',()=>{
   if(manual){manual=null;LS.set('manual',null);pinMarker.remove();refresh(true)}
@@ -390,11 +399,11 @@ async function downloadOffline(){
 offBtn.addEventListener('click',()=>{const o=LS.get('offline',null);if(o&&!downloading&&!confirm('The Taipei map is already saved. Download it again?'))return;downloadOffline()});
 
 /* ---------- misc ---------- */
-let toastT;function toast(t){const e=$('#toast');e.textContent=t;e.classList.add('on');clearTimeout(toastT);toastT=setTimeout(()=>e.classList.remove('on'),3200)}
+let toastT;function toast(t,ms){const e=$('#toast');e.textContent=t;e.classList.add('on');clearTimeout(toastT);toastT=setTimeout(()=>e.classList.remove('on'),ms||3200)}
 if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
 compute();renderFilters();renderList();layout();initMap();offState();startGPS(false);
 setInterval(()=>{if(!document.hidden&&state.sel==null)refresh(false)},60000);
-document.addEventListener('visibilitychange',()=>{if(!document.hidden)refresh(false)});
+document.addEventListener('visibilitychange',()=>{if(!document.hidden){refresh(false);if(!gpsDenied)startGPS(false)}});
 </script>
 </body>
 </html>
