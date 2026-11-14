@@ -1,6 +1,7 @@
 <!doctype html>
 <html lang="en">
 <head>
+<script>if(location.protocol==="http:"&&!/^(localhost|127\.|\[::1\])/.test(location.host))location.replace("https://"+location.host+location.pathname+location.search)</script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
 <title>Taipei Nearby</title>
@@ -353,7 +354,7 @@ function startGPS(byUser){
   if(!G){byUser&&toast('This device has no location service');return}
   if(watchId!=null){G.clearWatch(watchId);watchId=null}
   const fail=err=>{
-    if(err.code===1){gpsDenied=true;if(watchId!=null){G.clearWatch(watchId);watchId=null}renderList();if(byUser)toast(LOC_HELP,9000)}
+    if(err.code===1){gpsDenied=true;if(!isSecureContext){toast('This icon was saved from an insecure address. Delete it and add it again from Safari.',9000);return}if(watchId!=null){G.clearWatch(watchId);watchId=null}renderList();if(byUser)toast(LOC_HELP,9000)}
     else if(byUser&&!gps)toast('Still looking for your location. Try near a window or outdoors.',5000);
   };
   // Quick coarse fix first (works indoors), then a precise live watch.
