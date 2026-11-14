@@ -88,6 +88,24 @@ button{font:inherit;color:inherit;border:0;background:none;cursor:pointer;paddin
 .pin{font-size:26px;line-height:1;filter:drop-shadow(0 1px 2px rgba(0,0,0,.35))}
 .maplibregl-ctrl-top-left{top:var(--top)}
 
+/* filter panel (mobile) */
+.fbtn{font-weight:650;border-color:var(--ink)}
+#fp{position:fixed;inset:0;z-index:20;background:#fff;display:flex;flex-direction:column;padding-top:env(safe-area-inset-top)}
+.fph{display:flex;justify-content:space-between;align-items:center;padding:14px 16px;font-size:19px;border-bottom:1px solid var(--line)}
+.fph button{color:var(--accent);font-weight:650;font-size:16px;padding:6px 8px;margin:-6px -8px}
+#fpBody{flex:1;overflow-y:auto;padding:2px 16px 20px;-webkit-overflow-scrolling:touch}
+#fpBody h3{font-size:12.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--mute);margin:18px 0 10px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.tile{min-height:54px;border:1.5px solid var(--line);border-radius:14px;display:flex;align-items:center;gap:8px;padding:6px 12px;font-weight:600;font-size:14.5px;text-align:left;line-height:1.2}
+.tile span{font-size:19px}
+.tile small{margin-left:auto;color:var(--mute);font-weight:500;font-size:12.5px}
+.tile.on{border-color:var(--c,var(--ink));background:color-mix(in srgb,var(--c,var(--ink)) 11%,#fff)}
+.tile.on small{color:var(--c,var(--ink));font-weight:700;font-size:15px}
+.tile.on small::after{content:' ✓'}
+.fpf{display:flex;gap:10px;padding:12px 16px calc(12px + env(safe-area-inset-bottom));border-top:1px solid var(--line)}
+#fpClr{flex:none;padding:0 14px;height:52px;font-weight:600;color:var(--mute)}
+#fpGo{flex:1;height:52px;border-radius:14px;background:var(--ink);color:#fff;font-weight:700;font-size:16px}
+
 /* desktop */
 @media (min-width:900px){
   :root{--top:0px}
@@ -105,6 +123,7 @@ button{font:inherit;color:inherit;border:0;background:none;cursor:pointer;paddin
   .cx{display:block;font-size:12.5px;color:var(--mute);margin-top:4px}
   .ck{-webkit-line-clamp:3}
   #mapBtns{top:12px}
+  .fbtn,#fp{display:none!important}
   #toast{left:calc(50% + var(--panel)/2);top:16px}
   .maplibregl-ctrl-top-left{top:0}
 }
@@ -132,6 +151,7 @@ button{font:inherit;color:inherit;border:0;background:none;cursor:pointer;paddin
   <button class="mb" id="locBtn" aria-label="My location">◎</button>
   <button class="mb" id="offBtn" aria-label="Save map offline">⬇<small hidden></small></button>
 </div>
+<div id="fp" hidden><div class="fph"><b>Filters</b><button id="fpX">Done</button></div><div id="fpBody"></div><div class="fpf"><button id="fpClr">Clear all</button><button id="fpGo"></button></div></div>
 <div id="toast"></div>
 
 <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
@@ -142,14 +162,14 @@ const $=s=>document.querySelector(s);
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const LS={get(k,d){try{const v=JSON.parse(localStorage.getItem('tn_'+k));return v==null?d:v}catch(e){return d}},set(k,v){try{localStorage.setItem('tn_'+k,JSON.stringify(v))}catch(e){}}};
 const STYLE='https://tiles.openfreemap.org/styles/positron';
-const CATS=[['food','Food','🍜','#E8590C'],['cafe','Coffee & tea','☕','#8D6E63'],['sweet','Sweets & boba','🧋','#E64980'],['night','Night markets','🏮','#7048E8'],['sight','Sights','📸','#1C7ED6'],['temple','Temples','🛕','#C92A2A'],['museum','Art & museums','🖼️','#0CA678'],['book','Books','📚','#5C7CFA'],['nature','Parks & walks','🌿','#2F9E44'],['spring','Hot springs','♨️','#1098AD'],['shop','Shopping','🛍️','#E67700'],['bar','Bars','🍸','#364FC7'],['family','Family','🎡','#66A80F'],['trip','Day trips','🚆','#495057']];
+const CATS=[['food','Food','🍜','#E8590C'],['cafe','Coffee & tea','☕','#8D6E63'],['sweet','Sweets & boba','🧋','#E64980'],['night','Night markets','🏮','#7048E8'],['sight','Sights','📸','#1C7ED6'],['book','Books','📚','#5C7CFA'],['nature','Parks & walks','🌿','#2F9E44'],['spring','Hot springs','♨️','#1098AD'],['shop','Shopping','🛍️','#E67700'],['family','Family','🎡','#66A80F'],['trip','Day trips','🚆','#495057'],['museum','Art & museums','🖼️','#0CA678'],['temple','Temples','🛕','#C92A2A']];
 const CAT={};CATS.forEach(([id,label,emoji,color])=>CAT[id]={id,label,emoji,color});
 const BY={};PLACES.forEach(p=>BY[p.id]=p);
 const CENTER={lat:25.0478,lng:121.5170};
 const mq=matchMedia('(min-width:900px)');
 const desktop=()=>mq.matches;
 
-const state={cats:new Set(LS.get('cats',[])),open:false,walk:0,veg:LS.get('veg',false),saved:false,top:false,brinda:false,sort:'best',sel:null};
+const state={cats:new Set(LS.get('cats',[]).filter(c=>CAT[c])),open:false,walk:0,veg:LS.get('veg',false),saved:false,top:false,brinda:false,sort:'best',sel:null};
 const stars=new Set(LS.get('stars',[]));
 let gps=null,manual=LS.get('manual',null),shown=[];
 
@@ -183,13 +203,30 @@ function compute(){
 }
 
 /* ---------- filters ---------- */
+const QUICK=[['open','Open now'],['w10','🚶 10 min walk'],['w20','🚶 20 min walk'],['w30','🚶 30 min walk'],['top','Must-see'],['saved','★ Saved'],['veg','🌱 Vegetarian'],['brinda',"Brinda's picks"]];
+const qOn=k=>k[0]==='w'&&k.length<4?state.walk===+k.slice(1):state[k];
+const nActive=()=>state.cats.size+QUICK.filter(([k])=>qOn(k)).length;
 function renderFilters(){
-  $('#catRow').innerHTML=`<button class="chip${state.cats.size?'':' on'}" data-cat="">All</button>`+CATS.map(([id,l,e,c])=>`<button class="chip${state.cats.has(id)?' on':''}" style="--c:${c}" data-cat="${id}">${e} ${l}</button>`).join('');
-  const q=(k,l,on)=>`<button class="chip sm${on?' on':''}" data-q="${k}">${l}</button>`;
-  $('#quickRow').innerHTML=q('open','Open now',state.open)+'<span class="sep"></span>'+[10,20,30].map(n=>q('w'+n,'🚶 '+n+' min',state.walk===n)).join('')+'<span class="sep"></span>'+q('top','Must-see',state.top)+q('saved','★ Saved',state.saved)+q('veg','🌱 Vegetarian',state.veg)+q('brinda',"Brinda's picks",state.brinda);
+  const n=nActive();
+  $('#catRow').innerHTML=`<button class="chip fbtn${n?' on':''}" id="fOpen">☰ Filters${n?' · '+n:''}</button><button class="chip${state.cats.size?'':' on'}" data-cat="">All</button>`+CATS.map(([id,l,e,c])=>`<button class="chip${state.cats.has(id)?' on':''}" style="--c:${c}" data-cat="${id}">${e} ${l}</button>`).join('');
+  $('#quickRow').innerHTML=QUICK.map(([k,l])=>`<button class="chip sm${qOn(k)?' on':''}" data-q="${k}">${l.replace(' walk','')}</button>`).join('');
+  if(!$('#fp').hidden)renderPanel();
 }
-$('#catRow').addEventListener('click',e=>{const b=e.target.closest('[data-cat]');if(!b)return;const c=b.dataset.cat;if(!c)state.cats.clear();else state.cats.has(c)?state.cats.delete(c):state.cats.add(c);LS.set('cats',[...state.cats]);closeDetail(true);refresh(true)});
-$('#quickRow').addEventListener('click',e=>{const b=e.target.closest('[data-q]');if(!b)return;const k=b.dataset.q;if(k[0]==='w'&&k.length<4){const n=+k.slice(1);state.walk=state.walk===n?0:n}else state[k]=!state[k];LS.set('veg',state.veg);closeDetail(true);refresh(true)});
+function renderPanel(){
+  const cnt={};PLACES.forEach(p=>cnt[p.c]=(cnt[p.c]||0)+1);
+  $('#fpBody').innerHTML='<h3>What are you after?</h3><div class="grid">'+CATS.map(([id,l,e,c])=>`<button class="tile${state.cats.has(id)?' on':''}" style="--c:${c}" data-cat="${id}"><span>${e}</span>${l}<small>${cnt[id]||0}</small></button>`).join('')+'</div><h3>Narrow it down</h3><div class="grid">'+QUICK.map(([k,l])=>`<button class="tile${qOn(k)?' on':''}" data-q="${k}">${l}<small></small></button>`).join('')+'</div>';
+  $('#fpGo').textContent='Show '+shown.length+(shown.length===1?' place':' places');
+}
+function onFilterClick(e){
+  if(e.target.closest('#fOpen')){$('#fp').hidden=false;renderPanel();return}
+  const b=e.target.closest('[data-cat],[data-q]');if(!b)return;
+  if('cat' in b.dataset){const c=b.dataset.cat;if(!c)state.cats.clear();else state.cats.has(c)?state.cats.delete(c):state.cats.add(c)}
+  else{const k=b.dataset.q;if(k[0]==='w'&&k.length<4){const n=+k.slice(1);state.walk=state.walk===n?0:n}else state[k]=!state[k]}
+  LS.set('cats',[...state.cats]);LS.set('veg',state.veg);closeDetail(true);refresh(true);
+}
+['#catRow','#quickRow','#fpBody'].forEach(q=>$(q).addEventListener('click',onFilterClick));
+$('#fpGo').onclick=$('#fpX').onclick=()=>{$('#fp').hidden=true};
+$('#fpClr').onclick=()=>clearFilters();
 function clearFilters(){state.cats.clear();state.open=state.saved=state.top=state.brinda=state.veg=false;state.walk=0;LS.set('cats',[]);LS.set('veg',false);refresh(true)}
 
 /* ---------- list ---------- */
@@ -212,7 +249,7 @@ $('#sortBtn').addEventListener('pointerdown',e=>e.stopPropagation());
 const PRICE=['Free','Under NT$200','NT$200–600','NT$600–1,500','NT$1,500+'];
 function renderDetail(p){const c=CAT[p.c],o=p._o,far=p._w>35;
   const dir=`https://www.google.com/maps/dir/?api=1&destination=${p.lat},${p.lng}&travelmode=${far?'transit':'walking'}`;
-  const gm=`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(p.z+' 台北')}`;
+  const gm=`https://www.google.com/maps/search/${encodeURIComponent(p.z)}/@${p.lat},${p.lng},17z`;
   const closed=(p.x||[]).length?' · closed '+p.x.map(d=>DAYS[d]).join(', '):'';
   $('#detail').innerHTML=`<div class="dhead"><button id="back">‹ Back to list</button><button id="starBtn">${stars.has(p.id)?'★ Saved':'☆ Save'}</button></div>
   <div class="dcat"><span class="ico" style="--c:${c.color}">${c.emoji}</span>${c.label} · ${esc(p.a)}${p.p===3?' · Must-see':''}${p.b?' · Brinda':''}</div>
