@@ -91,6 +91,7 @@ button{font:inherit;color:inherit;border:0;background:none;cursor:pointer;paddin
 
 /* filter panel (mobile) */
 .fbtn{font-weight:650;border-color:var(--ink)}
+.chip.city{font-weight:650}
 #fp{position:fixed;inset:0;z-index:20;background:#fff;display:flex;flex-direction:column;padding-top:env(safe-area-inset-top)}
 .fph{display:flex;justify-content:space-between;align-items:center;padding:14px 16px;font-size:19px;border-bottom:1px solid var(--line)}
 .fph button{color:var(--accent);font-weight:650;font-size:16px;padding:6px 8px;margin:-6px -8px}
@@ -157,6 +158,7 @@ button{font:inherit;color:inherit;border:0;background:none;cursor:pointer;paddin
 
 <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
 <script src="places.js"></script>
+<script src="places-taichung.js"></script>
 <script>
 'use strict';
 const $=s=>document.querySelector(s);
@@ -165,18 +167,22 @@ const LS={get(k,d){try{const v=JSON.parse(localStorage.getItem('tn_'+k));return 
 const STYLE='https://tiles.openfreemap.org/styles/positron';
 const CATS=[['food','Food','🍜','#E8590C'],['cafe','Coffee & tea','☕','#8D6E63'],['sweet','Sweets & boba','🧋','#E64980'],['night','Night markets','🏮','#7048E8'],['sight','Sights','📸','#1C7ED6'],['book','Books','📚','#5C7CFA'],['nature','Parks & walks','🌿','#2F9E44'],['spring','Hot springs','♨️','#1098AD'],['shop','Shopping','🛍️','#E67700'],['family','Family','🎡','#66A80F'],['trip','Day trips','🚆','#495057'],['museum','Art & museums','🖼️','#0CA678'],['temple','Temples','🛕','#C92A2A']];
 const CAT={};CATS.forEach(([id,label,emoji,color])=>CAT[id]={id,label,emoji,color});
+PLACES.forEach(p=>p.ct='tp');(window.PLACES_TC||[]).forEach(p=>{p.ct='tc';PLACES.push(p)});
 const BY={};PLACES.forEach(p=>BY[p.id]=p);
-const CENTER={lat:25.0478,lng:121.5170};
+const CITIES={tp:{name:'Taipei',center:{lat:25.0478,lng:121.5170},hotel:HOTEL},tc:{name:'Taichung',center:{lat:24.1477,lng:120.6736},hotel:window.HOTEL_TC||HOTEL}};
+const cityByDate=()=>{const d=new Date(Date.now()+8*3600e3).toISOString().slice(0,10);return d>='2026-11-15'&&d<'2026-11-18'?'tc':'tp'};
+const C=()=>CITIES[state.city];
+const cityCnt=()=>{const n={};PLACES.forEach(p=>{if(p.ct===state.city)n[p.c]=(n[p.c]||0)+1});return n};
 const mq=matchMedia('(min-width:900px)');
 const desktop=()=>mq.matches;
 
-const state={cats:new Set(LS.get('cats',[]).filter(c=>CAT[c])),open:false,walk:0,veg:LS.get('veg',false),saved:false,top:false,brinda:false,sort:'best',sel:null};
+const state={city:CITIES[LS.get('city','')]?LS.get('city',''):cityByDate(),cats:new Set(LS.get('cats',[]).filter(c=>CAT[c])),open:false,walk:0,veg:LS.get('veg',false),saved:false,top:false,brinda:false,sort:'best',sel:null};
 const stars=new Set(LS.get('stars',[]));
 let gps=null,manual=LS.get('manual',null),shown=[];
 
 /* ---------- geo + time ---------- */
 function dist(a,b){const R=6371000,r=Math.PI/180,x=Math.sin((b.lat-a.lat)*r/2)**2+Math.cos(a.lat*r)*Math.cos(b.lat*r)*Math.sin((b.lng-a.lng)*r/2)**2;return 2*R*Math.asin(Math.sqrt(x))}
-function origin(){if(manual)return{lat:manual.lat,lng:manual.lng,kind:'pin'};if(gps&&dist(gps,CENTER)<60000)return{lat:gps.lat,lng:gps.lng,kind:'gps'};return{lat:HOTEL.lat,lng:HOTEL.lng,kind:'hotel'}}
+function origin(){if(manual)return{lat:manual.lat,lng:manual.lng,kind:'pin'};if(gps&&dist(gps,C().center)<60000)return{lat:gps.lat,lng:gps.lng,kind:'gps'};return{lat:C().hotel.lat,lng:C().hotel.lng,kind:'hotel'}}
 function tpeNow(){const o={};new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Taipei',weekday:'short',hour:'2-digit',minute:'2-digit',hour12:false}).formatToParts(new Date()).forEach(x=>o[x.type]=x.value);return{d:['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].indexOf(o.weekday),m:(+o.hour%24)*60+ +o.minute}}
 const hm=s=>{const[a,b]=s.split(':');return +a*60+ +b};
 const fmt=m=>String(Math.floor(m/60)%24).padStart(2,'0')+':'+String(m%60).padStart(2,'0');
@@ -199,7 +205,7 @@ const DAYS=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 function compute(){
   const o=origin(),now=tpeNow();
   for(const p of PLACES){p._d=dist(o,p)*1.3;p._w=Math.max(1,Math.round(p._d/78));p._o=openInfo(p,now)}
-  shown=PLACES.filter(p=>(!state.cats.size||state.cats.has(p.c))&&(!state.open||(p._o&&p._o.open))&&(!state.walk||p._w<=state.walk)&&(!state.veg||p.c!=='food'||p.v)&&(!state.saved||stars.has(p.id))&&(!state.top||p.p===3)&&(!state.brinda||p.b));
+  shown=PLACES.filter(p=>p.ct===state.city&&(!state.cats.size||state.cats.has(p.c))&&(!state.open||(p._o&&p._o.open))&&(!state.walk||p._w<=state.walk)&&(!state.veg||p.c!=='food'||p.v)&&(!state.saved||stars.has(p.id))&&(!state.top||p.p===3)&&(!state.brinda||p.b));
   shown.sort(state.sort==='near'?(a,b)=>a._d-b._d:(a,b)=>(a._w-(a.p-1)*8)-(b._w-(b.p-1)*8));
 }
 
@@ -208,17 +214,19 @@ const QUICK=[['open','Open now'],['w10','🚶 10 min walk'],['w20','🚶 20 min 
 const qOn=k=>k[0]==='w'&&k.length<4?state.walk===+k.slice(1):state[k];
 const nActive=()=>state.cats.size+QUICK.filter(([k])=>qOn(k)).length;
 function renderFilters(){
-  const n=nActive();
-  $('#catRow').innerHTML=`<button class="chip fbtn${n?' on':''}" id="fOpen">☰ Filters${n?' · '+n:''}</button><button class="chip${state.cats.size?'':' on'}" data-cat="">All</button>`+CATS.map(([id,l,e,c])=>`<button class="chip${state.cats.has(id)?' on':''}" style="--c:${c}" data-cat="${id}">${e} ${l}</button>`).join('');
+  const n=nActive(),cnt=cityCnt();
+  $('#brand').firstChild.textContent=C().name+' Nearby';
+  $('#catRow').innerHTML=`<button class="chip city" id="cityBtn">📍 ${C().name} ⇄</button><button class="chip fbtn${n?' on':''}" id="fOpen">☰ Filters${n?' · '+n:''}</button><button class="chip${state.cats.size?'':' on'}" data-cat="">All</button>`+CATS.filter(c=>cnt[c[0]]).map(([id,l,e,c])=>`<button class="chip${state.cats.has(id)?' on':''}" style="--c:${c}" data-cat="${id}">${e} ${l}</button>`).join('');
   $('#quickRow').innerHTML=QUICK.map(([k,l])=>`<button class="chip sm${qOn(k)?' on':''}" data-q="${k}">${l.replace(' walk','')}</button>`).join('');
   if(!$('#fp').hidden)renderPanel();
 }
 function renderPanel(){
-  const cnt={};PLACES.forEach(p=>cnt[p.c]=(cnt[p.c]||0)+1);
-  $('#fpBody').innerHTML='<h3>What are you after?</h3><div class="grid">'+CATS.map(([id,l,e,c])=>`<button class="tile${state.cats.has(id)?' on':''}" style="--c:${c}" data-cat="${id}"><span>${e}</span>${l}<small>${cnt[id]||0}</small></button>`).join('')+'</div><h3>Narrow it down</h3><div class="grid">'+QUICK.map(([k,l])=>`<button class="tile${qOn(k)?' on':''}" data-q="${k}">${l}<small></small></button>`).join('')+'</div>';
+  const cnt=cityCnt();
+  $('#fpBody').innerHTML='<h3>What are you after?</h3><div class="grid">'+CATS.filter(c=>cnt[c[0]]).map(([id,l,e,c])=>`<button class="tile${state.cats.has(id)?' on':''}" style="--c:${c}" data-cat="${id}"><span>${e}</span>${l}<small>${cnt[id]||0}</small></button>`).join('')+'</div><h3>Narrow it down</h3><div class="grid">'+QUICK.map(([k,l])=>`<button class="tile${qOn(k)?' on':''}" data-q="${k}">${l}<small></small></button>`).join('')+'</div>';
   $('#fpGo').textContent='Show '+shown.length+(shown.length===1?' place':' places');
 }
 function onFilterClick(e){
+  if(e.target.closest('#cityBtn')){setCity(state.city==='tp'?'tc':'tp');return}
   if(e.target.closest('#fOpen')){$('#fp').hidden=false;renderPanel();return}
   const b=e.target.closest('[data-cat],[data-q]');if(!b)return;
   if('cat' in b.dataset){const c=b.dataset.cat;if(!c)state.cats.clear();else state.cats.has(c)?state.cats.delete(c):state.cats.add(c)}
@@ -239,7 +247,7 @@ function renderList(){
   $('#count').textContent=n+(n===1?' place':' places');
   $('#sortBtn').textContent=state.sort==='best'?'Best nearby ⇅':'Nearest first ⇅';
   const o=origin();
-  $('#originTxt').textContent=o.kind==='gps'?'Walking times from where you are now':o.kind==='pin'?'Walking times from your dropped pin · ◎ to reset':gps?"You're outside Taipei · measuring from your hotel":gpsDenied?'Location is off · tap ◎ to see how to turn it on':'Measuring from your hotel · tap ◎ to use your location';
+  $('#originTxt').textContent=o.kind==='gps'?'Walking times from where you are now':o.kind==='pin'?'Walking times from your dropped pin · ◎ to reset':gps?"You're outside "+C().name+" · measuring from your hotel":gpsDenied?'Location is off · tap ◎ to see how to turn it on':'Measuring from your hotel · tap ◎ to use your location';
   $('#list').innerHTML=n?shown.map(card).join('')+'<div class="foot">Opening hours are a guide, not live. Tap a place, then Google Maps, to confirm before a long trip.</div>':'<div class="empty">Nothing matches these filters.<br><button id="clr">Clear all filters</button></div>';
 }
 $('#list').addEventListener('click',e=>{if(e.target.id==='clr')return clearFilters();const b=e.target.closest('.card');if(b)select(b.dataset.id)});
@@ -301,18 +309,18 @@ head.addEventListener('pointerup',endDrag);head.addEventListener('pointercancel'
 addEventListener('resize',layout);mq.addEventListener('change',()=>{layout();map&&map.resize()});
 
 /* ---------- map ---------- */
-let map=null,mapReady=false,meMarker=null,pinMarker=null;
+let map=null,mapReady=false,meMarker=null,pinMarker=null,hotelMarker=null;
 const fc=a=>({type:'FeatureCollection',features:a.map(p=>({type:'Feature',geometry:{type:'Point',coordinates:[p.lng,p.lat]},properties:{id:p.id,n:p.n,p:p.p,color:CAT[p.c].color}}))});
 function setSel(p){if(mapReady)map.getSource('sel').setData(fc(p?[p]:[]))}
 function el(cls,txt){const d=document.createElement('div');d.className=cls;if(txt)d.textContent=txt;return d}
 function initMap(){
   if(!window.maplibregl){toast('Map could not load. The list still works.');return}
   const o=origin();
-  map=new maplibregl.Map({container:'map',style:STYLE,center:[o.lng,o.lat],zoom:14,minZoom:9.5,maxZoom:18,maxBounds:[[120.9,24.5],[122.4,25.6]],attributionControl:false,dragRotate:false,pitchWithRotate:false,fadeDuration:120});
+  map=new maplibregl.Map({container:'map',style:STYLE,center:[o.lng,o.lat],zoom:14,minZoom:8.5,maxZoom:18,maxBounds:[[119.8,22.4],[122.5,25.7]],attributionControl:false,dragRotate:false,pitchWithRotate:false,fadeDuration:120});
   map.touchZoomRotate.disableRotation();
   map.addControl(new maplibregl.AttributionControl({compact:true}),'top-left');
   map.setPadding(pad());
-  new maplibregl.Marker({element:el('pin','🏨')}).setLngLat([HOTEL.lng,HOTEL.lat]).addTo(map);
+  hotelMarker=new maplibregl.Marker({element:el('pin','🏨')}).setLngLat([C().hotel.lng,C().hotel.lat]).addTo(map);
   meMarker=new maplibregl.Marker({element:el('me')});
   pinMarker=new maplibregl.Marker({element:el('pin','📍'),anchor:'bottom'});
   if(manual)pinMarker.setLngLat([manual.lng,manual.lat]).addTo(map);
@@ -338,13 +346,24 @@ function initMap(){
   map.on('touchend',cancel);map.on('touchcancel',cancel);
 }
 function setManual(ll){manual={lat:ll.lat,lng:ll.lng};LS.set('manual',manual);pinMarker.setLngLat([ll.lng,ll.lat]).addTo(map);toast('Measuring from this pin');refresh(true)}
+function setCity(c,quiet){
+  if(!CITIES[c]||c===state.city)return;
+  state.city=c;LS.set('city',c);state.cats.clear();LS.set('cats',[]);
+  if(manual){manual=null;LS.set('manual',null);pinMarker&&pinMarker.remove()}
+  closeDetail(true);refresh(true);offState();
+  if(hotelMarker)hotelMarker.setLngLat([C().hotel.lng,C().hotel.lat]);
+  const o=origin();map&&map.jumpTo({center:[o.lng,o.lat],zoom:14,padding:pad()});
+  if(!quiet)toast('Showing '+C().name);
+}
 function refresh(scrollTop){compute();renderFilters();renderList();if(scrollTop)$('#list').scrollTop=0;if(mapReady)map.getSource('pl').setData(fc(shown));else if(map)map.once('load',()=>map.getSource('pl').setData(fc(shown)));if(state.sel)renderDetail(BY[state.sel])}
 
 /* ---------- location ---------- */
-let watchId=null,gpsDenied=false;
+let watchId=null,gpsDenied=false,gpsCity=null;
 const LOC_HELP='Location is blocked. On iPhone: Settings → Privacy & Security → Location Services → Safari Websites → While Using the App. Then close and reopen this app.';
 function onPos(pos){
   const n={lat:pos.coords.latitude,lng:pos.coords.longitude},first=!gps,moved=!gps||dist(gps,n)>25;gps=n;gpsDenied=false;
+  const gc=Object.keys(CITIES).filter(k=>dist(n,CITIES[k].center)<60000).sort((a,b)=>dist(n,CITIES[a].center)-dist(n,CITIES[b].center))[0]||null;
+  if(gc&&gc!==gpsCity){gpsCity=gc;if(gc!==state.city)setCity(gc)}
   if(meMarker&&map)meMarker.setLngLat([n.lng,n.lat]).addTo(map);
   if(moved)refresh(false);
   if(first&&map&&origin().kind==='gps')map.easeTo({center:[n.lng,n.lat],zoom:15,padding:pad(),duration:600});
@@ -364,18 +383,20 @@ function startGPS(byUser){
 $('#locBtn').addEventListener('click',()=>{
   if(manual){manual=null;LS.set('manual',null);pinMarker.remove();refresh(true)}
   if(!gps){startGPS(true);const o=origin();map&&map.easeTo({center:[o.lng,o.lat],zoom:14.5,padding:pad()});return}
-  const o=origin();if(o.kind!=='gps')toast("You're outside Taipei, so I'm measuring from your hotel");
+  const o=origin();if(o.kind!=='gps')toast("You're outside "+C().name+", so I'm measuring from your hotel");
   map&&map.easeTo({center:[o.lng,o.lat],zoom:15,padding:pad(),duration:600});
 });
 
 /* ---------- offline ---------- */
-const offBtn=$('#offBtn'),offLbl=offBtn.querySelector('small');
-function offState(){const o=LS.get('offline',null);if(o){offBtn.classList.add('done');offLbl.hidden=false;offLbl.textContent='✓'}}
-const lon2x=(l,z)=>Math.floor((l+180)/360*2**z),lat2y=(l,z)=>Math.floor((1-Math.log(Math.tan(l*Math.PI/180)+1/Math.cos(l*Math.PI/180))/Math.PI)/2*2**z);
-const AREAS=[[[121.30,24.80,121.95,25.30],[9,10,11,12]],[[121.42,24.94,121.63,25.20],[13,14]],[[121.80,25.08,121.87,25.13],[13,14]],[[121.75,25.02,121.80,25.06],[13,14]],[[121.67,25.19,121.71,25.22],[13,14]],[[121.53,24.84,121.57,24.88],[13,14]],[[121.72,25.11,121.77,25.15],[13,14]],[[121.40,25.15,121.46,25.20],[13,14]]];
 let downloading=false;
+const offBtn=$('#offBtn'),offLbl=offBtn.querySelector('small');
+const offKey=()=>state.city==='tp'?'offline':'offline_'+state.city;
+function offState(){if(downloading)return;const o=LS.get(offKey(),null);offBtn.classList.toggle('done',!!o);offLbl.hidden=!o;if(o)offLbl.textContent='✓'}
+const lon2x=(l,z)=>Math.floor((l+180)/360*2**z),lat2y=(l,z)=>Math.floor((1-Math.log(Math.tan(l*Math.PI/180)+1/Math.cos(l*Math.PI/180))/Math.PI)/2*2**z);
+const AREAS={tp:[[[121.30,24.80,121.95,25.30],[9,10,11,12]],[[121.42,24.94,121.63,25.20],[13,14]],[[121.80,25.08,121.87,25.13],[13,14]],[[121.75,25.02,121.80,25.06],[13,14]],[[121.67,25.19,121.71,25.22],[13,14]],[[121.53,24.84,121.57,24.88],[13,14]],[[121.72,25.11,121.77,25.15],[13,14]],[[121.40,25.15,121.46,25.20],[13,14]]],
+ tc:[[[120.35,23.75,121.10,24.40],[9,10,11,12]],[[120.58,24.10,120.72,24.20],[13,14]],[[120.53,24.29,120.57,24.33],[13,14]],[[120.67,24.03,120.72,24.08],[13,14]],[[120.41,24.04,120.45,24.07],[13,14]],[[120.89,23.84,120.94,23.89],[13,14]],[[120.72,24.17,120.76,24.20],[13,14]],[[120.79,24.19,120.83,24.22],[13,14]]]};
 async function downloadOffline(){
-  if(downloading)return;
+  if(downloading)return;const city=state.city,key=offKey(),cname=C().name;
   if(!('serviceWorker' in navigator)){toast('Offline saving needs the app opened over https');return}
   if(!navigator.onLine){toast('Connect to Wi-Fi first to save the map');return}
   downloading=true;offLbl.hidden=false;offBtn.classList.remove('done');offLbl.textContent='0%';
@@ -386,18 +407,18 @@ async function downloadOffline(){
     const style=await(await fetch(STYLE)).json();
     const src=Object.values(style.sources).find(s=>s.type==='vector');
     const tj=await(await fetch(src.url)).json(),tpl=tj.tiles[0],urls=new Set();
-    for(const[b,zs]of AREAS)for(const z of zs)for(let x=lon2x(b[0],z);x<=lon2x(b[2],z);x++)for(let y=lat2y(b[3],z);y<=lat2y(b[1],z);y++)urls.add(tpl.replace('{z}',z).replace('{x}',x).replace('{y}',y));
+    for(const[b,zs]of AREAS[city])for(const z of zs)for(let x=lon2x(b[0],z);x<=lon2x(b[2],z);x++)for(let y=lat2y(b[3],z);y<=lat2y(b[1],z);y++)urls.add(tpl.replace('{z}',z).replace('{x}',x).replace('{y}',y));
     const fonts=new Set();style.layers.forEach(l=>l.layout&&Array.isArray(l.layout['text-font'])&&l.layout['text-font'].forEach(f=>typeof f==='string'&&fonts.add(f)));fonts.add('Noto Sans Bold');
     for(const f of fonts)for(const r of['0-255','256-511','768-1023','8192-8447','12288-12543','65024-65279','65280-65535'])urls.add(style.glyphs.replace('{fontstack}',encodeURIComponent(f)).replace('{range}',r));
     if(typeof style.sprite==='string')for(const s of['.json','.png','@2x.json','@2x.png'])urls.add(style.sprite+s);
     const q=[...urls],total=q.length;let done=0,bytes=0,fail=0;
     await Promise.all(Array.from({length:8},async()=>{while(q.length){const u=q.pop();try{const r=await fetch(u);if(r.ok)bytes+=(await r.blob()).size;else if(r.status!==404&&r.status!==204)fail++}catch(e){fail++}done++;if(done%5===0||done===total)offLbl.textContent=Math.round(done/total*100)+'%'}}));
     if(fail>total*.05){toast(`Saved with ${fail} gaps. Tap ⬇ again on better Wi-Fi.`);offLbl.textContent='!'}
-    else{LS.set('offline',{at:Date.now(),mb:+(bytes/1e6).toFixed(1)});offState();toast(`Taipei map saved for offline use (${(bytes/1e6).toFixed(0)} MB)`)}
+    else{LS.set(key,{at:Date.now(),mb:+(bytes/1e6).toFixed(1)});downloading=false;offState();toast(`${cname} map saved for offline use (${(bytes/1e6).toFixed(0)} MB)`)}
   }catch(e){toast('Could not save the map. Check your connection and try again.');offLbl.hidden=true}
-  downloading=false;
+  downloading=false;offState();
 }
-offBtn.addEventListener('click',()=>{const o=LS.get('offline',null);if(o&&!downloading&&!confirm('The Taipei map is already saved. Download it again?'))return;downloadOffline()});
+offBtn.addEventListener('click',()=>{const o=LS.get(offKey(),null);if(o&&!downloading&&!confirm('The '+C().name+' map is already saved. Download it again?'))return;downloadOffline()});
 
 /* ---------- misc ---------- */
 let toastT;function toast(t,ms){const e=$('#toast');e.textContent=t;e.classList.add('on');clearTimeout(toastT);toastT=setTimeout(()=>e.classList.remove('on'),ms||3200)}

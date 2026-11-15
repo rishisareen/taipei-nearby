@@ -1,5 +1,5 @@
-const SHELL = 'shell-v1', MAP = 'map-v1';
-const SHELL_URLS = ['./', 'places.js', 'manifest.webmanifest', 'icon-180.png', 'icon-192.png', 'icon-512.png',
+const SHELL = 'shell-v2', MAP = 'map-v1';
+const SHELL_URLS = ['./', 'places.js', 'places-taichung.js', 'manifest.webmanifest', 'icon-180.png', 'icon-192.png', 'icon-512.png',
   'https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js', 'https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css'];
 
 self.addEventListener('install', e => {
