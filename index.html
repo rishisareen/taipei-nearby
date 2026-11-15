@@ -23,13 +23,20 @@ svg{display:block}
 #map{position:fixed;inset:0}
 
 /* chips */
-#filters{position:fixed;top:0;left:0;right:0;z-index:5;padding:calc(env(safe-area-inset-top) + 10px) 0 4px;pointer-events:none}
+#filters{position:fixed;top:0;left:0;right:0;z-index:5;padding:calc(env(safe-area-inset-top) + 8px) 0 4px;pointer-events:none}
 .row{display:flex;gap:8px;overflow-x:auto;padding:2px 12px 8px;scrollbar-width:none;-webkit-overflow-scrolling:touch;pointer-events:auto}
 .row::-webkit-scrollbar{display:none}
 .chip{flex:none;height:36px;padding:0 14px;border-radius:18px;background:#fff;box-shadow:0 0 0 .5px rgba(0,0,0,.07),0 2px 8px rgba(0,0,0,.1);font-weight:500;font-size:15px;white-space:nowrap;display:inline-flex;align-items:center;gap:6px;transition:transform .2s var(--ease),background .15s,color .15s}
 .chip.on{background:var(--c,var(--ink));color:#fff}
 .chip:active{transform:scale(.94)}
 .fbtn{padding:0 12px;font-weight:600}
+.bar{display:grid;grid-template-columns:repeat(7,1fr);margin:0 10px;padding:4px;pointer-events:auto;background:rgba(255,255,255,.9);-webkit-backdrop-filter:blur(20px) saturate(180%);backdrop-filter:blur(20px) saturate(180%);border-radius:20px;box-shadow:0 0 0 .5px rgba(0,0,0,.07),0 4px 16px rgba(0,0,0,.12)}
+.g{display:flex;flex-direction:column;align-items:center;gap:1px;padding:5px 0;border-radius:16px;font-size:11px;font-weight:500;color:var(--sub);position:relative;transition:background .2s,color .2s,transform .2s var(--ease)}
+.g span{font-size:21px;height:26px;display:grid;place-items:center;color:var(--accent)}
+.g.on{background:var(--ink);color:#fff;font-weight:600}
+.g:active{transform:scale(.9)}
+.g i{position:absolute;top:1px;right:5px;font-style:normal;min-width:17px;height:17px;border-radius:9px;background:var(--accent);color:#fff;font-size:11px;font-weight:700;display:grid;place-items:center;padding:0 4px}
+#subRow{position:absolute;left:0;right:0;top:100%;padding-top:4px;animation:rise .28s var(--ease)}
 .fbtn i{font-style:normal;min-width:20px;height:20px;border-radius:10px;background:var(--accent);color:#fff;font-size:12.5px;font-weight:700;display:grid;place-items:center;padding:0 5px}
 
 /* sheet */
@@ -93,19 +100,19 @@ svg{display:block}
 .fine{font-size:12.5px;color:var(--mute);margin:14px 2px 0}
 
 /* map controls */
-#mapBtns{position:fixed;right:12px;top:calc(var(--top) + 2px);z-index:4;display:flex;flex-direction:column;border-radius:12px;background:rgba(255,255,255,.86);-webkit-backdrop-filter:blur(20px) saturate(180%);backdrop-filter:blur(20px) saturate(180%);box-shadow:0 0 0 .5px rgba(0,0,0,.08),0 2px 10px rgba(0,0,0,.14)}
+#mapBtns{position:fixed;right:12px;top:calc(var(--top) + var(--sub,0px) + 4px);transition:top .3s var(--ease);z-index:4;display:flex;flex-direction:column;border-radius:12px;background:rgba(255,255,255,.86);-webkit-backdrop-filter:blur(20px) saturate(180%);backdrop-filter:blur(20px) saturate(180%);box-shadow:0 0 0 .5px rgba(0,0,0,.08),0 2px 10px rgba(0,0,0,.14)}
 .mb{width:44px;height:44px;display:grid;place-items:center;color:var(--accent);position:relative}
 .mb+.mb{border-top:.5px solid var(--line)}
 .mb:active{opacity:.5}
 .mb.live svg{fill:var(--accent)}
 .mb small{position:absolute;bottom:3px;right:3px;font-size:9px;font-weight:700;background:var(--accent);color:#fff;border-radius:7px;padding:0 4px;line-height:14px;white-space:nowrap}
 .mb.done small{background:#34c759}
-#toast{position:fixed;left:50%;top:calc(var(--top) + 8px);transform:translate(-50%,-12px) scale(.96);z-index:30;background:rgba(40,40,42,.88);-webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);color:#fff;padding:10px 16px;border-radius:20px;font-size:14px;font-weight:500;opacity:0;pointer-events:none;transition:.3s var(--ease);max-width:calc(100vw - 80px);text-align:center}
+#toast{position:fixed;left:50%;top:calc(var(--top) + var(--sub,0px) + 8px);transform:translate(-50%,-12px) scale(.96);z-index:30;background:rgba(40,40,42,.88);-webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);color:#fff;padding:10px 16px;border-radius:20px;font-size:14px;font-weight:500;opacity:0;pointer-events:none;transition:.3s var(--ease);max-width:calc(100vw - 80px);text-align:center}
 #toast.on{opacity:1;transform:translate(-50%,0)}
 .me{width:18px;height:18px;border-radius:50%;background:var(--accent);border:3px solid #fff;box-shadow:0 0 0 7px rgba(0,122,255,.18),0 1px 4px rgba(0,0,0,.3)}
 .pin{font-size:26px;line-height:1;filter:drop-shadow(0 1px 2px rgba(0,0,0,.35))}
 .hpin{width:28px;height:28px;border-radius:50%;background:var(--ink);color:#fff;display:grid;place-items:center;border:2px solid #fff;box-shadow:0 1px 5px rgba(0,0,0,.3)}
-.maplibregl-ctrl-top-left{top:var(--top)}
+.maplibregl-ctrl-top-left{top:calc(var(--top) + var(--sub,0px) + 2px);transition:top .3s var(--ease)}
 .maplibregl-ctrl-top-left .maplibregl-ctrl{margin:2px 0 0 12px}
 .maplibregl-ctrl-attrib{font-size:10px;opacity:.75}
 
@@ -151,7 +158,8 @@ svg{display:block}
 #cmX{width:100%;height:56px;margin-top:8px;border-radius:14px;background:#fff;color:var(--accent);font-size:19px;font-weight:600}
 
 @media (min-width:900px){
-  :root{--top:0px}
+  :root{--top:0px;--sub:0px!important}
+  #subRow{display:none!important}
   #panel{position:fixed;left:0;top:0;bottom:0;width:var(--panel);display:flex;flex-direction:column;background:var(--bg);box-shadow:.5px 0 0 var(--line);z-index:6}
   #map{left:var(--panel)}
   #filters{position:static;padding:14px 4px 0;pointer-events:auto;order:2}
@@ -179,7 +187,7 @@ svg{display:block}
 <body>
 <div id="map"></div>
 <div id="panel">
-  <div id="filters"><div class="row" id="catRow"></div></div>
+  <div id="filters"><div class="row" id="catRow"></div><div class="row" id="subRow" hidden></div></div>
   <div id="sheet">
     <div id="sheetHead">
       <div class="grab"></div>
@@ -261,10 +269,23 @@ const qOn=k=>isW(k)?state.walk===+k.slice(1):!!state[k];
 const nActive=()=>state.cats.size+TOG.filter(([k])=>state[k]).length+(state.walk?1:0);
 const fp=$('#fp'),cm=$('#cm');
 const I_F='<svg width="17" height="17" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M2.500 5h13M5 9h8M7.500 13h3"/></svg>';
+const GROUPS=[['eat','Eat','🍜',['food','sweet','night']],['coffee','Coffee','☕',['cafe']],['see','See','📸',['sight','museum','temple','trip','family']],['books','Books','📚',['book']],['shop','Shop','🛍️',['shop']],['active','Active','🏃',['nature','run','swim','spring']]];
 function renderFilters(){
-  const n=nActive(),cnt=cityCnt();
+  const cnt=cityCnt(),row=$('#catRow'),sub=$('#subRow'),chip=([id,l,e,c])=>`<button class="chip${state.cats.has(id)?' on':''}" style="--c:${c}" data-cat="${id}">${e} ${l}</button>`;
+  const open=`<button class="chip${state.open?' on':''}" data-q="open">Open now</button>`;
   $('#cityName').textContent=C().name;
-  $('#catRow').innerHTML=`<button class="chip fbtn" id="fOpen" aria-label="Filters">${I_F}${n?`<i>${n}</i>`:'Filters'}</button><button class="chip${state.open?' on':''}" data-q="open">Open now</button>`+CATS.filter(c=>cnt[c[0]]).map(([id,l,e,c])=>`<button class="chip${state.cats.has(id)?' on':''}" style="--c:${c}" data-cat="${id}">${e} ${l}</button>`).join('');
+  if(desktop()){
+    const n=nActive();row.className='row';sub.hidden=true;
+    row.innerHTML=`<button class="chip fbtn" id="fOpen" aria-label="Filters">${I_F}${n?`<i>${n}</i>`:'Filters'}</button>`+open+CATS.filter(c=>cnt[c[0]]).map(chip).join('');
+  }else{
+    const n=nActive()-state.cats.size,act=GROUPS.filter(g=>g[3].some(c=>state.cats.has(c)));
+    row.className='bar';
+    row.innerHTML=GROUPS.map(g=>`<button class="g${act.includes(g)?' on':''}" data-g="${g[0]}"><span>${g[2]}</span>${g[1]}</button>`).join('')+`<button class="g" id="fOpen"><span>${I_F}</span>Filters${n?`<i>${n}</i>`:''}</button>`;
+    const ids=[].concat(...act.map(g=>g[3])).filter(c=>cnt[c]);
+    sub.hidden=!act.length;
+    sub.innerHTML=act.length?open+(ids.includes('cafe')?`<button class="chip${state.spec?' on':''}" data-q="spec">Specialty only</button>`:'')+(ids.length>1?CATS.filter(c=>ids.includes(c[0])).map(chip).join(''):''):'';
+    document.documentElement.style.setProperty('--sub',act.length?'46px':'0px');
+  }
   if(fp.classList.contains('open'))syncPanel();
 }
 function renderPanel(){
@@ -279,12 +300,13 @@ function syncPanel(){
 }
 function onFilterClick(e){
   if(e.target.closest('#fOpen')){renderPanel();fp.classList.add('open');return}
-  const b=e.target.closest('[data-cat],[data-q]');if(!b)return;
-  if('cat' in b.dataset){const c=b.dataset.cat;state.cats.has(c)?state.cats.delete(c):state.cats.add(c)}
+  const b=e.target.closest('[data-cat],[data-q],[data-g]');if(!b)return;
+  if('g' in b.dataset){const cnt=cityCnt(),cs=GROUPS.find(x=>x[0]===b.dataset.g)[3].filter(c=>cnt[c]),on=cs.some(c=>state.cats.has(c));state.cats.clear();if(!on)cs.forEach(c=>state.cats.add(c));if(!state.cats.has('cafe'))state.spec=false}
+  else if('cat' in b.dataset){const c=b.dataset.cat;state.cats.has(c)?state.cats.delete(c):state.cats.add(c)}
   else{const k=b.dataset.q;if(isW(k)){const n=+k.slice(1);state.walk=state.walk===n?0:n}else state[k]=!state[k]}
   LS.set('cats',[...state.cats]);LS.set('veg',state.veg);closeDetail(true);refresh(true);
 }
-['#catRow','#fpBody'].forEach(q=>$(q).addEventListener('click',onFilterClick));
+['#catRow','#subRow','#fpBody'].forEach(q=>$(q).addEventListener('click',onFilterClick));
 $('#fpGo').onclick=$('#fpX').onclick=()=>fp.classList.remove('open');
 fp.addEventListener('click',e=>{if(e.target===fp)fp.classList.remove('open')});
 $('#fpClr').onclick=()=>clearFilters();
@@ -367,7 +389,7 @@ const endDrag=()=>{if(!drag)return;const d=drag;drag=null;
   else best=order.reduce((a,b)=>Math.abs(snaps[a]-sheetY)<Math.abs(snaps[b]-sheetY)?a:b);
   setSheet(best)};
 head.addEventListener('pointerup',endDrag);head.addEventListener('pointercancel',endDrag);
-addEventListener('resize',layout);mq.addEventListener('change',()=>{layout();map&&map.resize()});
+addEventListener('resize',layout);mq.addEventListener('change',()=>{renderFilters();layout();map&&map.resize()});
 
 /* ---------- map ---------- */
 let map=null,mapReady=false,meMarker=null,pinMarker=null,hotelMarker=null;
