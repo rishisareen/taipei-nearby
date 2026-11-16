@@ -346,7 +346,7 @@ function renderDetail(p){const c=CAT[p.c],o=p._o,far=p._w>35,sv=stars.has(p.id);
   const gm=`https://www.google.com/maps/search/${encodeURIComponent(p.z)}/@${p.lat},${p.lng},17z`;
   const closed=(p.x||[]).length?'Closed '+p.x.map(d=>DAYS[d]).join(', '):'';
   const km=p._d<950?Math.round(p._d/10)*10+' m':(p._d/1000).toFixed(1)+' km';
-  $('#detail').innerHTML=`<div class="dtop"><div><h2>${esc(p.n)}</h2>${p.z!==p.n?`<div class="zh">${esc(p.z)}</div>`:''}<div class="dsub">${catLabel(p)} · ${esc(p.a)}${p.p===3?' · Must-see':''}${p.b?' · Brinda':''}</div></div><button class="x" id="back" aria-label="Close">${I_X}</button></div>
+  $('#detail').innerHTML=`<div class="dtop"><div><h2>${esc(p.n)}</h2>${p.z!==p.n?`<div class="zh">${esc(p.z)}</div>`:''}<div class="dsub">${catLabel(p)} · ${esc(p.a)}${p.p===3?' · Must-see':''}${p.w?' · World’s 100 Best #'+p.w:''}${p.b?' · Brinda':''}</div></div><button class="x" id="back" aria-label="Close">${I_X}</button></div>
   <div class="acts"><a class="btn pri" href="${dir}" target="_blank" rel="noopener"><b>Directions</b><span>${far?km+' · transit':walkTxt(p)}</span></a><a class="btn" href="${gm}" target="_blank" rel="noopener">${I_PIN}<span>Maps</span></a><button class="btn" id="starBtn"><span class="star">${sv?'★':'☆'}</span><span>${sv?'Saved':'Save'}</span></button></div>
   <div class="stats"><div><small>Hours</small><b class="${o?(o.open?'op':'cl'):''}">${o?(o.open?'Open':'Closed'):'Check'}</b></div><div><small>Distance</small><b>${km}</b></div><div><small>Allow</small><b>${dur(p.t)}</b></div>${p.pr!=null?`<div><small>Cost</small><b>${PSHORT[p.pr]}</b></div>`:''}</div>
   <div class="grp"><p>${esc(p.k)}</p></div>
