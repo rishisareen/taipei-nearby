@@ -301,7 +301,7 @@ function syncPanel(){
 function onFilterClick(e){
   if(e.target.closest('#fOpen')){renderPanel();fp.classList.add('open');return}
   const b=e.target.closest('[data-cat],[data-q],[data-g]');if(!b)return;
-  if('g' in b.dataset){const cnt=cityCnt(),cs=GROUPS.find(x=>x[0]===b.dataset.g)[3].filter(c=>cnt[c]),on=cs.some(c=>state.cats.has(c));state.cats.clear();if(!on)cs.forEach(c=>state.cats.add(c));if(!state.cats.has('cafe'))state.spec=false}
+  if('g' in b.dataset){const cnt=cityCnt(),cs=GROUPS.find(x=>x[0]===b.dataset.g)[3].filter(c=>cnt[c]),on=cs.some(c=>state.cats.has(c));cs.forEach(c=>on?state.cats.delete(c):state.cats.add(c));if(!state.cats.has('cafe'))state.spec=false}
   else if('cat' in b.dataset){const c=b.dataset.cat;state.cats.has(c)?state.cats.delete(c):state.cats.add(c)}
   else{const k=b.dataset.q;if(isW(k)){const n=+k.slice(1);state.walk=state.walk===n?0:n}else state[k]=!state[k]}
   LS.set('cats',[...state.cats]);LS.set('veg',state.veg);closeDetail(true);refresh(true);
