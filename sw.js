@@ -36,7 +36,10 @@ self.addEventListener('fetch', e => {
     const isAsset = /\.(pbf|png|json)$/.test(url.pathname);
     e.respondWith(isAsset ? cacheFirst(req, mapKey(url)) : staleWhileRevalidate(req, MAP, url.href));
   } else if (url.origin === location.origin || url.hostname === 'unpkg.com') {
-    const key = req.mode === 'navigate' ? './' : req.url;
+    // Only the app's own page maps to the shell; other pages (e.g. taichung-map/) are cached under their own URL.
+    const root = new URL(self.registration.scope).pathname;
+    const isShell = url.origin === location.origin && (url.pathname === root || url.pathname === root + 'index.html');
+    const key = req.mode === 'navigate' && isShell ? './' : req.url;
     e.respondWith(staleWhileRevalidate(req, SHELL, key));
   }
 });
